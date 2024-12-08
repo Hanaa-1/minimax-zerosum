@@ -1,102 +1,117 @@
-import random
+import tkinter as tk
+from tkinter import messagebox
 
-class TicTacToe:
-    def __init__(self):
-        self.board = [' ' for _ in range(9)]
-        self.current_player = 'X'
+# Functions for Minimax AI
+def is_moves_left(board):
+    return any(cell == '_' for row in board for cell in row)
 
-    def print_board(self):
+def check_winner(board):
+    for row in board:
+        if row[0] == row[1] == row[2] != '_':
+            return 1 if row[0] == 'O' else -1
+    for col in range(3):
+        if board[0][col] == board[1][col] == board[2][col] != '_':
+            return 1 if board[0][col] == 'O' else -1
+    if board[0][0] == board[1][1] == board[2][2] != '_':
+        return 1 if board[0][0] == 'O' else -1
+    if board[0][2] == board[1][1] == board[2][0] != '_':
+        return 1 if board[0][2] == 'O' else -1
+    return 0 if not is_moves_left(board) else None
+
+def minimax(board, depth, is_max):
+    score = check_winner(board)
+    if score is not None:
+        return score
+
+    if is_max:
+        best = -float('inf')
         for i in range(3):
-            print(f' {self.board[i*3]} | {self.board[i*3+1]} | {self.board[i*3+2]} ')
-            if i < 2:
-                print('---------')
+            for j in range(3):
+                if board[i][j] == '_':
+                    board[i][j] = 'O'
+                    best = max(best, minimax(board, depth + 1, not is_max))
+                    board[i][j] = '_'
+        return best
+    else:
+        best = float('inf')
+        for i in range(3):
+            for j in range(3):
+                if board[i][j] == '_':
+                    board[i][j] = 'X'
+                    best = min(best, minimax(board, depth + 1, not is_max))
+                    board[i][j] = '_'
+        return best
 
-    def is_valid_move(self, move):
-        return self.board[move] == ' '
+def find_best_move(board):
+    best_val = -float('inf')
+    best_move = (-1, -1)
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == '_':
+                board[i][j] = 'O'
+                move_val = minimax(board, 0, False)
+                board[i][j] = '_'
+                if move_val > best_val:
+                    best_val = move_val
+                    best_move = (i, j)
+    return best_move
 
-    def make_move(self, move):
-        self.board[move] = self.current_player
+# GUI Class
+class TicTacToe:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Tic Tac Toe")
+        self.board = [['_', '_', '_'], ['_', '_', '_'], ['_', '_', '_']]
+        self.buttons = [[None for _ in range(3)] for _ in range(3)]
+        self.create_board()
 
-    def check_winner(self):
-        winning_combos = [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]
-        for combo in winning_combos:
-            if self.board[combo[0]] == self.board[combo[1]] == self.board[combo[2]] != ' ':
-                return True
-        return False
+    def create_board(self):
+        for i in range(3):
+            for j in range(3):
+                self.buttons[i][j] = tk.Button(
+                    self.root, text='', font=('Arial', 24), height=2, width=5,
+                    command=lambda i=i, j=j: self.player_move(i, j)
+                )
+                self.buttons[i][j].grid(row=i, column=j)
 
-    def minimax(self, depth=0, is_maximizing=True, alpha=-10000, beta=10000):
-        if self.check_winner():
-            if self.current_player == 'X':
-                return 10 - depth
-            else:
-                return -10 + depth
-
-        if is_maximizing:
-            best_score = -10000
-            for i in range(9):
-                if self.board[i] == ' ':
-                    self.make_move(i)
-                    score = self.minimax(depth + 1, False, alpha, beta)
-                    self.board[i] = ' '
-                    best_score = max(score, best_score)
-                    alpha = max(alpha, score)
-                    if beta <= alpha:
-                        break
-            return best_score
+    def player_move(self, i, j):
+        if self.board[i][j] == '_':
+            self.board[i][j] = 'X'
+            self.buttons[i][j].config(text='X', state=tk.DISABLED)
+            winner = check_winner(self.board)
+            if winner is not None:
+                self.end_game(winner)
+                return
+            self.ai_move()
         else:
-            best_score = 10000
-            for i in range(9):
-                if self.board[i] == ' ':
-                    self.make_move(i)
-                    score = self.minimax(depth + 1, True, alpha, beta)
-                    self.board[i] = ' '
-                    best_score = min(score, best_score)
-                    beta = min(beta, score)
-                    if beta <= alpha:
-                        break
-            return best_score
+            messagebox.showwarning("Invalid Move", "This cell is already taken!")
 
     def ai_move(self):
-        best_score = -10000
-        best_move = None
-        for i in range(9):
-            if self.board[i] == ' ':
-                self.make_move(i)
-                score = self.minimax()
-                self.board[i] = ' '
-                if score > best_score:
-                    best_score = score
-                    best_move = i
-        self.make_move(best_move)
+        ai_move = find_best_move(self.board)
+        if ai_move != (-1, -1):
+            self.board[ai_move[0]][ai_move[1]] = 'O'
+            self.buttons[ai_move[0]][ai_move[1]].config(text='O', state=tk.DISABLED)
+        winner = check_winner(self.board)
+        if winner is not None:
+            self.end_game(winner)
 
-def main():
-    game = TicTacToe()
-    print("Current state:")
-    game.print_board()
-
-    while True:
-        # AI move
-        ai_move = game.ai_move()
-        print("AI move:")
-        game.print_board()
-        
-        if game.check_winner():
-            print("AI wins!")
-            break
-        
-        # Human move
-        human_move = input("Enter human move (0-8): ")
-        if human_move.isdigit() and 0 <= int(human_move) < 9:
-            human_move = int(human_move)
-            game.make_move(human_move)
-            print("Human move:")
-            game.print_board()
-            
-            if game.check_winner():
-                print("Human wins!")
-                break
+    def end_game(self, winner):
+        if winner == 1:
+            messagebox.showinfo("Game Over", "AI wins!")
+        elif winner == -1:
+            messagebox.showinfo("Game Over", "You win!")
         else:
-            print("Invalid input. Please enter a number between 0 and 8.")
+            messagebox.showinfo("Game Over", "It's a tie!")
+        self.reset_game()
 
+    def reset_game(self):
+        self.board = [['_', '_', '_'], ['_', '_', '_'], ['_', '_', '_']]
+        for i in range(3):
+            for j in range(3):
+                self.buttons[i][j].config(text='', state=tk.NORMAL)
+
+# Main Execution
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    game = TicTacToe(root)
+    root.mainloop()
