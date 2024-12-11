@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+import random
 
 # Functions for Minimax AI with Alpha-Beta Pruning and Heuristic Evaluation
 def is_moves_left(board):
@@ -61,7 +62,9 @@ def minimax(board, depth, is_max, alpha, beta):
             for j in range(3):
                 if board[i][j] == '_':
                     board[i][j] = 'O'
-                    best = max(best, minimax(board, depth + 1, not is_max, alpha, beta))
+                    current_score = minimax(board, depth + 1, not is_max, alpha, beta)
+                    best = max(best, current_score)
+                    print(f"Depth {depth}: Evaluating move (O) at ({i}, {j}) with score {current_score}")
                     board[i][j] = '_'
                     alpha = max(alpha, best)
                     if beta <= alpha:
@@ -73,7 +76,9 @@ def minimax(board, depth, is_max, alpha, beta):
             for j in range(3):
                 if board[i][j] == '_':
                     board[i][j] = 'X'
-                    best = min(best, minimax(board, depth + 1, not is_max, alpha, beta))
+                    current_score = minimax(board, depth + 1, not is_max, alpha, beta)
+                    best = min(best, current_score)
+                    print(f"Depth {depth}: Evaluating move (X) at ({i}, {j}) with score {current_score}")
                     board[i][j] = '_'
                     beta = min(beta, best)
                     if beta <= alpha:
@@ -88,19 +93,26 @@ def find_best_move(board):
             if board[i][j] == '_':
                 board[i][j] = 'O'
                 move_val = minimax(board, 0, False, -float('inf'), float('inf'))
+                print(f"Evaluating best move at ({i}, {j}) with score {move_val}")
                 board[i][j] = '_'
                 if move_val > best_val:
                     best_val = move_val
                     best_move = (i, j)
     return best_move
 
+def random_ai_move(board):
+    available_moves = [(i, j) for i in range(3) for j in range(3) if board[i][j] == '_']
+    return random.choice(available_moves) if available_moves else (-1, -1)
+
 # GUI Class
 class TicTacToe:
-    def __init__(self, root):
+    def __init__(self, root, difficulty, parent_root):
         self.root = root
         self.root.title("Tic Tac Toe")
         self.board = [['_', '_', '_'], ['_', '_', '_'], ['_', '_', '_']]
         self.buttons = [[None for _ in range(3)] for _ in range(3)]
+        self.difficulty = difficulty
+        self.parent_root = parent_root
         self.create_board()
 
     def create_board(self):
@@ -111,6 +123,13 @@ class TicTacToe:
                     command=lambda i=i, j=j: self.player_move(i, j)
                 )
                 self.buttons[i][j].grid(row=i, column=j)
+
+        # Add a Back button
+        back_button = tk.Button(
+            self.root, text="Back", font=('Arial', 16),
+            command=self.go_back
+        )
+        back_button.grid(row=3, column=1, pady=20)
 
     def player_move(self, i, j):
         if self.board[i][j] == '_':
@@ -125,7 +144,11 @@ class TicTacToe:
             messagebox.showwarning("Invalid Move", "This cell is already taken!")
 
     def ai_move(self):
-        ai_move = find_best_move(self.board)
+        if self.difficulty == "Easy":
+            ai_move = random_ai_move(self.board)
+        else:
+            ai_move = find_best_move(self.board)
+
         if ai_move != (-1, -1):
             self.board[ai_move[0]][ai_move[1]] = 'O'
             self.buttons[ai_move[0]][ai_move[1]].config(text='O', state=tk.DISABLED)
@@ -148,8 +171,38 @@ class TicTacToe:
             for j in range(3):
                 self.buttons[i][j].config(text='', state=tk.NORMAL)
 
+    def go_back(self):
+        self.root.destroy()
+        self.parent_root.deiconify()
+
+# Start Page Class
+class StartPage:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Tic Tac Toe")
+        self.label = tk.Label(root, text="Choose Difficulty", font=('Arial', 24))
+        self.label.pack(pady=20)
+
+        self.easy_button = tk.Button(root, text="Easy", font=('Arial', 18), command=self.start_easy)
+        self.easy_button.pack(pady=10)
+
+        self.expert_button = tk.Button(root, text="Expert", font=('Arial', 18), command=self.start_expert)
+        self.expert_button.pack(pady=10)
+
+    def start_easy(self):
+        self.launch_game("Easy")
+
+    def start_expert(self):
+        self.launch_game("Expert")
+
+    def launch_game(self, difficulty):
+        self.root.withdraw()  # Hide the start page
+        new_root = tk.Tk()
+        game = TicTacToe(new_root, difficulty, self.root)
+        new_root.mainloop()
+
 # Main Execution
 if __name__ == "__main__":
     root = tk.Tk()
-    game = TicTacToe(root)
+    start_page = StartPage(root)
     root.mainloop()
