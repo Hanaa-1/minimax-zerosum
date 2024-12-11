@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 
-# Functions for Minimax AI
+# Functions for Minimax AI with Alpha-Beta Pruning and Heuristic Evaluation
 def is_moves_left(board):
     return any(cell == '_' for row in board for cell in row)
 
@@ -25,7 +25,7 @@ def evaluate_board(board):
     elif winner == -1:
         return -10  # Player (X) wins
 
-    # Heuristic Eval: Count possible winning lines for each player
+    # Heuristic: Count possible winning lines for each player
     score = 0
     for row in board:
         if row.count('O') > 0 and row.count('X') == 0:
@@ -79,6 +79,7 @@ def minimax(board, depth, is_max, alpha, beta):
                     if beta <= alpha:
                         break
         return best
+
 def find_best_move(board):
     best_val = -float('inf')
     best_move = (-1, -1)
@@ -86,7 +87,7 @@ def find_best_move(board):
         for j in range(3):
             if board[i][j] == '_':
                 board[i][j] = 'O'
-                move_val = minimax(board, 0, False)
+                move_val = minimax(board, 0, False, -float('inf'), float('inf'))
                 board[i][j] = '_'
                 if move_val > best_val:
                     best_val = move_val
