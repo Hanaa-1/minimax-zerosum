@@ -79,9 +79,6 @@ def minimax(board, depth, is_max, alpha, beta):
                     current_score = minimax(board, depth + 1, not is_max, alpha, beta)
                     best = min(best, current_score)
                     print(f"Depth {depth}: Evaluating move (X) at ({i}, {j}) with score {current_score}")
-                    current_score = minimax(board, depth + 1, not is_max, alpha, beta)
-                    best = min(best, current_score)
-                    print(f"Depth {depth}: Evaluating move (X) at ({i}, {j}) with score {current_score}")
                     board[i][j] = '_'
                     beta = min(beta, best)
                     if beta <= alpha:
@@ -96,7 +93,6 @@ def find_best_move(board):
             if board[i][j] == '_':
                 board[i][j] = 'O'
                 move_val = minimax(board, 0, False, -float('inf'), float('inf'))
-                print(f"Evaluating best move at ({i}, {j}) with score {move_val}")
                 print(f"Evaluating best move at ({i}, {j}) with score {move_val}")
                 board[i][j] = '_'
                 if move_val > best_val:
