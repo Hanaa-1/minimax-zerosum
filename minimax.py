@@ -18,10 +18,42 @@ def check_winner(board):
         return 1 if board[0][2] == 'O' else -1
     return 0 if not is_moves_left(board) else None
 
-def minimax(board, depth, is_max):
+def evaluate_board(board):
+    winner = check_winner(board)
+    if winner == 1:
+        return 10  # AI (O) wins
+    elif winner == -1:
+        return -10  # Player (X) wins
+
+    # Heuristic Eval: Count possible winning lines for each player
+    score = 0
+    for row in board:
+        if row.count('O') > 0 and row.count('X') == 0:
+            score += row.count('O')
+        elif row.count('X') > 0 and row.count('O') == 0:
+            score -= row.count('X')
+
+    for col in range(3):
+        col_vals = [board[row][col] for row in range(3)]
+        if col_vals.count('O') > 0 and col_vals.count('X') == 0:
+            score += col_vals.count('O')
+        elif col_vals.count('X') > 0 and col_vals.count('O') == 0:
+            score -= col_vals.count('X')
+
+    diag1 = [board[i][i] for i in range(3)]
+    diag2 = [board[i][2 - i] for i in range(3)]
+    for diag in [diag1, diag2]:
+        if diag.count('O') > 0 and diag.count('X') == 0:
+            score += diag.count('O')
+        elif diag.count('X') > 0 and diag.count('O') == 0:
+            score -= diag.count('X')
+
+    return score
+
+def minimax(board, depth, is_max, alpha, beta):
     score = check_winner(board)
     if score is not None:
-        return score
+        return evaluate_board(board)
 
     if is_max:
         best = -float('inf')
@@ -29,8 +61,11 @@ def minimax(board, depth, is_max):
             for j in range(3):
                 if board[i][j] == '_':
                     board[i][j] = 'O'
-                    best = max(best, minimax(board, depth + 1, not is_max))
+                    best = max(best, minimax(board, depth + 1, not is_max, alpha, beta))
                     board[i][j] = '_'
+                    alpha = max(alpha, best)
+                    if beta <= alpha:
+                        break
         return best
     else:
         best = float('inf')
@@ -38,10 +73,12 @@ def minimax(board, depth, is_max):
             for j in range(3):
                 if board[i][j] == '_':
                     board[i][j] = 'X'
-                    best = min(best, minimax(board, depth + 1, not is_max))
+                    best = min(best, minimax(board, depth + 1, not is_max, alpha, beta))
                     board[i][j] = '_'
+                    beta = min(beta, best)
+                    if beta <= alpha:
+                        break
         return best
-
 def find_best_move(board):
     best_val = -float('inf')
     best_move = (-1, -1)
